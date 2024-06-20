@@ -1,0 +1,126 @@
+#include "AAudioRender.h"
+#include <android/log.h>
+
+#define LOG_TAG "AAudioRender"
+#define LOGE(FORMAT, ...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, FORMAT, ##__VA_ARGS__)
+#define LOGI(FORMAT, ...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, FORMAT, ##__VA_ARGS__)
+
+static RingBuffer* audioBuffer = nullptr;
+
+void setRingBuffer(RingBuffer* buffer) {
+    audioBuffer = buffer;
+}
+
+AAudioRender::AAudioRender() {
+    this->paused = false;
+    this->sample_rate = 44100;
+    this->channel_count = 2;
+    this->format = AAUDIO_FORMAT_PCM_I16;
+    this->callback = nullptr;
+}
+
+AAudioRender::~AAudioRender() {
+    AAudioStream_close(stream);
+}
+
+void AAudioRender::configure(int32_t sampleRate, int32_t channelCnt, aaudio_format_t fmt) {
+    this->sample_rate = sampleRate;
+    this->channel_count = channelCnt;
+    this->format = fmt;
+}
+
+int AAudioRender::start() {
+    AAudioStreamBuilder *builder;
+    aaudio_result_t result = AAudio_createStreamBuilder(&builder);
+    if (result != AAUDIO_OK) {
+        LOGE("createStreamBuilder failed: %s", AAudio_convertResultToText(result));
+        return -1;
+    }
+    AAudioStreamBuilder_setSampleRate(builder, this->sample_rate);
+    AAudioStreamBuilder_setChannelCount(builder, this->channel_count);
+    AAudioStreamBuilder_setFormat(builder, this->format);
+    AAudioStreamBuilder_setPerformanceMode(builder, AAUDIO_PERFORMANCE_MODE_LOW_LATENCY);
+    AAudioStreamBuilder_setSharingMode(builder, AAUDIO_SHARING_MODE_SHARED);
+    if (!this->callback) {
+        LOGE("callback is nullptr");
+        return -1;
+    }
+    AAudioStreamBuilder_setDataCallback(builder, this->callback, this->user_data);
+    result = AAudioStreamBuilder_openStream(builder, &stream);
+    if (result != AAUDIO_OK) {
+        LOGE("openStream failed: %s", AAudio_convertResultToText(result));
+        return -1;
+    }
+    this->format = AAudioStream_getFormat(stream);
+    this->channel_count = AAudioStream_getChannelCount(stream);
+    this->sample_rate = AAudioStream_getSampleRate(stream);
+    result = AAudioStream_requestStart(stream);
+    if (result != AAUDIO_OK) {
+        LOGE("requestStart failed: %s", AAudio_convertResultToText(result));
+        return -1;
+    }
+    AAudioStreamBuilder_delete(builder);
+    return 0;
+}
+
+int AAudioRender::flush() {
+    const int64_t timeout = 100000000; // 100ms
+    AAudioStream_requestPause(stream);
+    aaudio_result_t result = AAUDIO_OK;
+    aaudio_stream_state_t currentState = AAudioStream_getState(stream);
+    aaudio_stream_state_t inputState = currentState;
+    while (result == AAUDIO_OK && currentState != AAUDIO_STREAM_STATE_PAUSED) {
+        result = AAudioStream_waitForStateChange(
+                stream, inputState, &currentState, timeout);
+        inputState = currentState;
+    }
+    AAudioStream_requestFlush(stream);
+    AAudioStream_requestStart(stream);
+    result = AAUDIO_OK;
+    currentState = AAudioStream_getState(stream);
+    inputState = currentState;
+    while (result == AAUDIO_OK && currentState != AAUDIO_STREAM_STATE_STARTED) {
+        result = AAudioStream_waitForStateChange(
+                stream, inputState, &currentState, timeout);
+        inputState = currentState;
+    }
+    return result;
+}
+
+int AAudioRender::pause(bool p) {
+    if (p == paused) {
+        return 0;
+    }
+    if (p) {
+        const int64_t timeout = 100000000; // 100ms
+        AAudioStream_requestPause(stream);
+        aaudio_result_t result = AAUDIO_OK;
+        aaudio_stream_state_t currentState = AAudioStream_getState(stream);
+        aaudio_stream_state_t inputState = currentState;
+        while (result == AAUDIO_OK && currentState != AAUDIO_STREAM_STATE_PAUSED) {
+            result = AAudioStream_waitForStateChange(
+                    stream, inputState, &currentState, timeout);
+            inputState = currentState;
+        }
+        paused = true;
+        return result;
+    } else {
+        const int64_t timeout = 100000000; // 100ms
+        AAudioStream_requestStart(stream);
+        aaudio_result_t result = AAUDIO_OK;
+        aaudio_stream_state_t currentState = AAudioStream_getState(stream);
+        aaudio_stream_state_t inputState = currentState;
+        while (result == AAUDIO_OK && currentState != AAUDIO_STREAM_STATE_STARTED) {
+            result = AAudioStream_waitForStateChange(
+                    stream, inputState, &currentState, timeout);
+            inputState = currentState;
+        }
+        paused = false;
+        return result;
+    }
+}
+
+void AAudioRender::setCallback(AAudioStream_dataCallback cb, void* data) {
+    this->callback = cb;
+    this->user_data = data;
+}
