@@ -16,6 +16,7 @@ public:
     size_t availableWrite();
     size_t getChannelCount() const;
     size_t getBytesPerSample() const;
+    void drop(size_t size);
 
 private:
     uint8_t* buffer;

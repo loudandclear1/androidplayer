@@ -324,6 +324,18 @@ void* audioDecodeThreadFunc(void* arg) {
                     }
 
                     double delay = frameTime - videoTime;
+                    if (delay > 0.1) { // 音频太快，插入静音样本
+                        int silenceSamples = (int)(codecContext->sample_rate * delay);
+                        if (silenceSamples > codecContext->frame_size) silenceSamples = codecContext->frame_size;
+                        memset(outputBuffer, 0, silenceSamples * audioChannels * av_get_bytes_per_sample(AV_SAMPLE_FMT_S16));
+                        ringBuffer.write(outputBuffer, silenceSamples * audioChannels * av_get_bytes_per_sample(AV_SAMPLE_FMT_S16));
+                    } else if (delay < -0.1) { // 音频太慢，丢弃样本
+                        int dropSamples = (int)(-codecContext->sample_rate * delay);
+                        if (dropSamples > codecContext->frame_size) dropSamples = codecContext->frame_size;
+                        ringBuffer.drop(dropSamples * audioChannels * av_get_bytes_per_sample(AV_SAMPLE_FMT_S16));
+                    }
+
+                    // 延迟播放以同步视频
                     if (delay > 0) {
                         std::this_thread::sleep_for(std::chrono::duration<double>(delay));
                     }
@@ -340,6 +352,7 @@ void* audioDecodeThreadFunc(void* arg) {
     av_frame_free(&frame);
     return nullptr;
 }
+
 
 extern "C" {
 

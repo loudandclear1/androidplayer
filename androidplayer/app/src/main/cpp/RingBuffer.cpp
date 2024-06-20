@@ -58,3 +58,12 @@ size_t RingBuffer::getChannelCount() const {
 size_t RingBuffer::getBytesPerSample() const {
     return bytesPerSample;
 }
+
+void RingBuffer::drop(size_t size) {
+    size_t bytesToDrop = size;
+    if (availableRead() < bytesToDrop) {
+        bytesToDrop = availableRead();
+    }
+
+    tail = (tail + bytesToDrop) % maxSize;
+}
