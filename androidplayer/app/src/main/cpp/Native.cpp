@@ -43,6 +43,11 @@ static pthread_t renderThread;
 static pthread_t audioPlayThread;
 static JavaVM* javaVM = nullptr;
 
+// 音视频同步
+static volatile double videoClock = 0.0;
+static volatile double audioClock = 0.0;
+static std::mutex clockMutex;
+
 // 安全队列实现
 template<typename T>
 class SafeQueue {
@@ -222,6 +227,10 @@ void* renderThreadFunc(void* arg) {
         ANativeWindow_unlockAndPost(nativeWindow);
 
         double frameTime = (double)frame->pts * av_q2d(params->formatContext->streams[params->videoStreamIndex]->time_base);
+        {
+            std::unique_lock<std::mutex> lock(clockMutex);
+            videoClock = frameTime;
+        }
         double audioTime = currentPosition;
         double delay = frameTime - audioTime;
 
@@ -301,6 +310,23 @@ void* audioDecodeThreadFunc(void* arg) {
                 if (outputBufferSize > 0) {
                     size_t dataSize = outputBufferSize * av_get_bytes_per_sample(AV_SAMPLE_FMT_S16) * audioChannels;
                     ringBuffer.write(outputBuffer, dataSize); // 向环形缓冲区写入数据
+
+                    double frameTime = (double)frame->pts * av_q2d(params->formatContext->streams[params->audioStreamIndex]->time_base);
+                    {
+                        std::unique_lock<std::mutex> lock(clockMutex);
+                        audioClock = frameTime;
+                    }
+
+                    double videoTime;
+                    {
+                        std::unique_lock<std::mutex> lock(clockMutex);
+                        videoTime = videoClock;
+                    }
+
+                    double delay = frameTime - videoTime;
+                    if (delay > 0) {
+                        std::this_thread::sleep_for(std::chrono::duration<double>(delay));
+                    }
                 }
             }
         }
