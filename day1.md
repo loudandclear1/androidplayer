@@ -8,7 +8,7 @@
 
 通过修改libs.versions.toml中AGP的版本后构建成功
 
-![构建成功](../XIAOMI/project/day1/image/build_success.png)
+![构建成功](image/build_success.png)
 
 
 
@@ -231,15 +231,15 @@ $TOOLCHAIN/x86_64-linux-android$API-clang -shared -fPIC -o $ARCH_ROOT/libffmpeg-
 
 接下来，修改CMakeLists.txt中需要的动态库名称，对应我的ffmpeg库文件
 
-![修改需要库名称](../XIAOMI/project/day1/image/change_libname.png)
+![修改需要库名称](image/change_libname.png)
 
 运行项目，可以看到运行成功
 
-![运行成功](../XIAOMI/project/day1/image/successs_result.png)
+![运行成功](image/successs_result.png)
 
 一直没有成功，不知道为什么
 
-![fail](../XIAOMI/project/day1/image/fail.png)
+![fail](image/fail.png)
 
 
 
@@ -247,23 +247,23 @@ $TOOLCHAIN/x86_64-linux-android$API-clang -shared -fPIC -o $ARCH_ROOT/libffmpeg-
 
 更改sdk路径，还是老样子修改AGP版本
 
-![sdk](../XIAOMI/project/day1/image/sdk_path.png)
+![sdk](image/sdk_path.png)
 
 因为Android只能加载*.so结尾的动态库，不能识别如*.so.57结尾的文件，所以这里要修改configure
 
-![before](../XIAOMI/project/day1/image/fix_config.png)
+![before](image/fix_config.png)
 
 修改为
 
-![after](../XIAOMI/project/day1/image/after_fix_config.png)
+![after](image/after_fix_config.png)
 
 进行下一步执行修改后的configure文件
 
-![next1](../XIAOMI/project/day1/image/next1.png)
+![next1](image/next1.png)
 
-![next1_result](../XIAOMI/project/day1/image/next1_result.png)
+![next1_result](image/next1_result.png)
 
-![next1_result1](../XIAOMI/project/day1/image/next1_result1.png)
+![next1_result1](image/next1_result1.png)
 
 
 
@@ -385,17 +385,17 @@ cp -r $PREFIX/include/* /home/hgz/Desktop/XIAOMI/project/day1/androidplayer/app/
 
 运行效果，终于打印出来视频的时长了
 
-![打印视频时长](../XIAOMI/project/day1/image/video_duration.png)
+![打印视频时长](image/video_duration.png)
 
 为了验证结果的准确性，我特意去查了视频的信息
 
-![视频信息](../XIAOMI/project/day1/image/video_information.png)
+![视频信息](image/video_information.png)
 
 可以看到输出的信息是准确的
 
 完整的测试结果
 
-![完整结果](../XIAOMI/project/day1/image/result1.png)
+![完整结果](image/result1.png)
 
 
 
