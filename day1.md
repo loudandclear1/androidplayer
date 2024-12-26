@@ -4,7 +4,7 @@
 
 在构建项目中遇到AGP版本不兼容问题，如图所示
 
-![构建失败](../XIAOMI/project/day1/image/build_fail.png)
+![构建失败](../image/build_fail.png)
 
 通过修改libs.versions.toml中AGP的版本后构建成功
 
