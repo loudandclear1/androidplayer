@@ -8,7 +8,7 @@
 
 现在可以播放视频了，但是没有显示进度条，也不能暂停，仅仅实现播放功能
 
-![播放](../XIAOMI/project/day2/image/impl_play.png)
+![播放](image/impl_play.png)
 
 #### 第三步
 
@@ -16,9 +16,9 @@
 
 修改JNI_OnLoad，能正确的获取JNIEnv
 
-![暂停](../XIAOMI/project/day2/image/impl_pause.png)
+![暂停](image/impl_pause.png)
 
-![暂停——继续](../XIAOMI/project/day2/image/impl_pause1.png)
+![暂停——继续](image/impl_pause1.png)
 
 可以看到，这里暂停的时候，按钮显示播放；在播放的时候，按钮显示暂停。并且播放结束后，可以再次循环播放。但是播放结束，按钮不会自动变为“播放”。而且播放器很有特色，自带倍速播放，不用充值VIP，即可获得倍速播放功能。
 
